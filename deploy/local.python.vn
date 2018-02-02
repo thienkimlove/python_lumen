@@ -1,0 +1,17 @@
+server {
+    listen 80;
+    server_name local.python.vn;
+
+    access_log /var/log/nginx/python_vn_access.log;
+    error_log /var/log/nginx/python_vn_error.log;
+
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location /static/ {
+        alias /var/www/python/static/;
+    }
+
+    location / {
+        include         uwsgi_params;
+        uwsgi_pass      unix:/run/uwsgi/python.sock;
+    }
+}
