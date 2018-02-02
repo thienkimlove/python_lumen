@@ -1,100 +1,38 @@
-#### Reset migration Django
-```textmate
-https://simpleisbetterthancomplex.com/tutorial/2016/07/26/how-to-reset-migrations.html
+### End about project
 
-apt-get install libcurl4-openssl-dev
+* `requests` package we must enter both `http` and `https` for proxies working.
 
+* All ways to using thread with python here `https://code.tutsplus.com/articles/introduction-to-parallel-and-concurrent-programming-in-python--cms-28612`
+I using the `Pool` method for concurrency thread.
 
-```
+`pycurl` is not working with thread but `requests` is work
 
-* Run the task manually
-
-Assuming the task is called `my_task` in Django app `myapp` in a tasks submodule:
+* To avoid error with `requests`
 
 ```textmate
-$ python manage.py shell
->>> from myapp.tasks import my_task
->>> my_task.delay()
-
->>> result = machine.delay()
->>> print(backend.result)
+File "/root/Env/python/lib/python3.5/encodings/idna.py", line 167, in encode
+    raise UnicodeError("label too long")
+UnicodeError: label too long
 ```
 
-This will post the task to queue as we defined (Redis, RabbitMQ).
-
-And if we have process daemon running `celery -A project_name worker -l info -B`.
-
-It will execute task queue in Message Broker and result response.
-
-* Another way to debug tasks is `http://docs.celeryproject.org/en/latest/userguide/debugging.html`
-
-* Option for `eventlet` : `-P eventlet -c 1000` but must remove `-B`.
+We must understand that requests using `url` and `params` so for complete url we must separately as below:
 
 ```textmate
-insert into python_logs (id, link, agent, allow, country, response, sent) SELECT id, link, '', allow, country, '', sent from logs where sent is null
+from urllib.parse import urlparse, parse_qs
+        o = urlparse(url)
+        query = parse_qs(o.query)
+        url_short = o._replace(query=None).geturl()
+        g = session.get(url_short, params=query)
+        result = get_html_content(g.content)
 ```
 
-* Delete all queue in `celery`
+
+* For running Django in background cron-tasks. I using custom commands  
+ 
+ Read more at  `https://docs.djangoproject.com/en/2.0/howto/custom-management-commands/#management-commands-and-locales`.
+ 
+For using Virtualenv at Cronjob, Edit `/etc/crontab` : 
 
 ```textmate
-celery -A python_lumen purge
-
-Clear Redis
-redis-cli flushall
+* * * * * root  /root/Env/python/bin/python /var/www/python/manage.py click >> /dev/null 2>&1
 ```
-
-* Crontab
-```textmate
-run every mins
-crontab(minute=0, hour='*/1')
-```
-
-* Read
-
-```textmate
-https://simpleisbetterthancomplex.com/tutorial/2017/08/20/how-to-use-celery-with-django.html
-https://code.tutsplus.com/tutorials/using-celery-with-django-for-background-task-processing--cms-28732
-https://www.rabbitmq.com/install-debian.html
-http://celery.readthedocs.io/en/latest/tutorials/task-cookbook.html#ensuring-a-task-is-only-executed-one-at-a-time
-http://celery.readthedocs.io/en/latest/userguide/tasks.html#performance-and-strategies
-https://www.caktusgroup.com/blog/2014/09/29/celery-production/
-https://medium.com/@yehandjoe/celery-4-periodic-task-in-django-9f6b5a8c21c7
-http://michal.karzynski.pl/blog/2014/05/18/setting-up-an-asynchronous-task-queue-for-django-using-celery-redis/
-http://django-background-tasks.readthedocs.io/en/latest/
-http://docs.celeryproject.org/en/latest/userguide/configuration.html#std:setting-accept_content
-https://stackoverflow.com/questions/40358560/celery-group-task-attributeerror-nonetype-object-has-no-attribute-app
-https://stackoverflow.com/questions/7585435/best-way-to-convert-string-to-bytes-in-python-3
-http://docs.celeryproject.org/en/v4.0.2/userguide/periodic-tasks.html#beat-custom-schedulers
-https://github.com/celery/celery/blob/master/examples/eventlet/webcrawler.py
-http://celery.readthedocs.io/en/latest/userguide/optimizing.html#prefork-pool-prefetch-settings
-https://medium.com/@taylorhughes/three-quick-tips-from-two-years-with-celery-c05ff9d7f9eb
-```
-* Why cant use beat with event
-```textmate
-The embedded beat option simply starts beat as a child process, changing that to use a greenthread on eventlet/geven is not on my todo but I wouldn't reject a patch. It's not recommended that you use -B in production anyway, since it makes it hard to ensure only one is started.
-```
-
-* Control RabbitMQ
-
-To enable RabbitMQ Management Console, run the following:
-```textmate
-
-sudo rabbitmq-plugins enable rabbitmq_management
-
-# To start the service:
-service rabbitmq-server start
-
-# To stop the service:
-service rabbitmq-server stop
-
-# To restart the service:
-service rabbitmq-server restart
-
-# To check the status:
-service rabbitmq-server status
-
-```
-Once you've enabled the console, it can be accessed using your favourite web browser by visiting: `http://[your droplet's IP]:15672/`.
-
-* Delete queue in RabbitMQ `http://115.146.123.46:15672/#/queues`
-
