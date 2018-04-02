@@ -36,3 +36,5 @@ For using Virtualenv at Cronjob, Edit `/etc/crontab` :
 ```textmate
 * * * * * root  /root/Env/python/bin/python /var/www/python/manage.py click >> /dev/null 2>&1
 ```
+
+* Exception `http://docs.python-requests.org/en/master/_modules/requests/exceptions/`

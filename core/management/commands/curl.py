@@ -28,6 +28,38 @@ def get_html_content(content, kill_script = False):
     # drop blank lines
     return '\n'.join(chunk for chunk in chunks if chunk)
 
+def proxy(url, country, agent, rand):
+
+    credentials = 'lum-customer-theway_holdings-zone-nam-country-' + country + '-session-' + rand + ':99oah6sz26i5'
+
+    url = url.replace("&amp;", "&")
+
+    proxies = {
+        "https": "https://" + credentials + "@zproxy.luminati.io:22225"
+    }
+    requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+    session = requests.session()
+    session.max_redirects = 10
+    session.verify = False
+    session.timeout = 60
+    session.headers.update({'User-Agent': agent})
+    session.proxies.update(proxies)
+
+    try:
+        g = session.get(url)
+        g.raise_for_status()
+        result = get_html_content(g.content)
+    except requests.exceptions.Timeout as e:
+        # Maybe set up for a retry, or continue in a retry loop
+        result = "Error with request %s" % e
+    except requests.exceptions.TooManyRedirects as e:
+        # Tell the user their URL was bad and try a different one
+        result = "Error with request %s" % e
+    except requests.exceptions.RequestException as e:
+        # catastrophic error. bail.
+        result = "Error with request %s" % e
+    return result
+
 def curl(url, country, agent, rand):
 
     url = url.replace("&amp;", "&")
@@ -56,7 +88,6 @@ def curl(url, country, agent, rand):
         c.perform()
         result = buffer.getvalue()
         result = result.decode('utf-8').replace('\/', '/')
-        result = get_html_content(result)
     except:
         type, value, tb = sys.exc_info()
         if hasattr(value, 'message'):
@@ -64,7 +95,9 @@ def curl(url, country, agent, rand):
         else:
             result = 'Error'
     c.close()
+
     print(result)
+
 
 class Command(BaseCommand):
     help = 'Running virtual clicks'
@@ -74,7 +107,6 @@ class Command(BaseCommand):
         url = 'https://www.whoishostingthis.com/tools/user-agent/'
         country = 'gb'
         agent = 'Mozilla/5.0 (iPhone; CPU iPhone OS 10_0_2 like Mac OS X) AppleWebKit/601.1 (KHTML, like Gecko) CriOS/53.0.2785.109 Mobile/14A456 Safari/601.1.46'
-
         #proxy(url, country, agent, rand)
         curl(url, country, agent, rand)
         self.stdout.write('done')

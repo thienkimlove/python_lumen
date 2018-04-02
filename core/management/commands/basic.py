@@ -9,10 +9,11 @@ from gevent.pool import Pool
 from strgen import StringGenerator
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, parse_qs, unquote
+from django.utils.crypto import get_random_string
 
 
 from django.core.management.base import BaseCommand
-from django.utils.crypto import get_random_string
+from django.db import connection
 from core.models import Log
 
 def regex_check(content):
@@ -36,6 +37,7 @@ def regex_check(content):
 def ok_check(content):
     regex = [
         r"(itms\-appss?\:\/\/[^\"\']+)",
+        r"(itmss?\:\/\/[^\"\']+)",
         r"(https?\:\/\/itunes\.apple\.com[^\"\']+)",
     ]
     find = None
@@ -124,6 +126,8 @@ def proxy(url, country, agent, rand):
 
     if 'ogp.me/ns' in result:
         result = 'OK! URL='+url
+    if 'Connecting to the iTunes Store' in result:
+        result = 'OK! URL='+url
     check_in_content = ok_check(result)
     if check_in_content is not None:
         result = 'OK! URL=' + check_in_content
@@ -190,34 +194,38 @@ def fetch_item(log_id, country, allow, link):
     if ',' in user_country:
         user_country = user_country.split(',')[0]
     response = virtual_curl(user_country, link, rand, agent_row)
-
     item = Log.objects.get(pk=log_id)
-    item.agent = agent_row
-    item.response = response.encode('utf-8')
-    item.sent = 1
-    item.save()
+
+
+    try:
+        item.agent = agent_row
+        item.response = response
+        item.sent = 1
+        item.process = None
+        item.save()
+    except Exception as e:
+        item.agent = agent_row
+        item.response = 'Error when insert response {}'.format(e)
+        item.sent = 1
+        item.process = None
+        item.save()
+
+
 
 class Command(BaseCommand):
     help = 'Running virtual clicks'
     def handle(self, *args, **options):
 
         start_time = time.time()
-
-        redis_client = redis.Redis()
-        timeout = 60 * 60 * 5  # five hours
-        lock = redis_client.lock('virtual_click_process', timeout=timeout)
-        have_lock = lock.acquire(blocking=False)
-        if have_lock:
-            requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-            #connection.allow_thread_sharing = True
-            pool = Pool(4000)
-            logs  = Log.objects.filter(sent__isnull=True).all()[::1000]
-            for log in logs:
-                pool.spawn(fetch_item, log.id, log.country, log.allow, log.link)
-            pool.join()
-            lock.release()
-        else:
-            self.stdout.write(self.style.SUCCESS('Another process is running!'))
-
+        requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+        #connection.allow_thread_sharing = True
+        rand_process = get_random_string(length=16, allowed_chars='abcdefghijklmnopqrstuvwxyz123456789')
+        with connection.cursor() as cursor:
+            cursor.execute("update logs set process=%s where sent=0 and process is null limit 100", [rand_process])
+        pool = Pool()
+        logs  = Log.objects.filter(sent=0, process__exact=rand_process).all()
+        for log in logs:
+            pool.spawn(fetch_item, log.id, log.country, log.allow, log.link)
+        pool.join()
         end_time = time.time()
         self.stdout.write(self.style.SUCCESS('Successfully end clicks in "%s"' % (end_time - start_time)))

@@ -6,7 +6,7 @@ from django.core.management import BaseCommand
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from strgen import StringGenerator
 
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse, parse_qs, unquote
 
 
 def regex_check(content):
@@ -93,17 +93,14 @@ class Command(BaseCommand):
         #rexcheck
         content = "window.location = 'https://mobftrk.com/click?pid=12&offer_id=742187&sub1=P5P16R5174823478260495984&sub2=6051';"
         #print(regex_check(content))
-        long_url = 'http://md.apptrknow.com/dir/click?placement_id=7828&campaign_id=26957816&affid=6202&cid=565637027ca5b45331a8b229c008559a_0_1517543897&data1=[data1]&data2=[data2]&data3=[data3]&data4=[data4]&affsub1=106&device_id=&idfa=&gaid=&uuid=7a8b5c16-1cad-4139-a118-58cb9676fdec&ref=apptrknow.com'
-        try:
-            requests.get(long_url)
-        except UnicodeError as e:
-            print("Error in proxy {}".format(e))
+        long_url = 'http://md.apptrknow.com/dir/click?placement_id=7828&campaign_id=27018617&affid=6202&cid=96cbad8db95b0af24e5607b6555474e8_0_1517563452&data1=[data1]&data2=[data2]&data3=[data3]&data4=[data4]&affsub1=106&device_id=&idfa=&gaid=&uuid=cd7df4fe-1379-4d6d-aeae-7348e712984c&ref=apptrknow.com'
+        long_url = long_url.replace('&amp;', '&')
+        print(long_url)
         o = urlparse(long_url)
-        query = parse_qs(o.query)
+        query = parse_qs(o.query, True)
         url = o._replace(query=None).geturl()
         print(url)
         print(query)
         print(requests.get(url, params=query))
 
-        #encode = long_url.encode('idna')
 

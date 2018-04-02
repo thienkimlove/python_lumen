@@ -12,31 +12,19 @@ from urllib.parse import urlparse, parse_qs, unquote
 
 
 from django.core.management.base import BaseCommand
-from django.utils.crypto import get_random_string
 from core.models import Log
 
 def regex_check(content):
     regex = [
-        r"location\.replace\([\"\']?(https?\:\/\/[^\"\']+)",
-        r"location\s*=\s*[\"\']?(https?\:\/\/[^\"\']+)",
+        r"window\.location\.replace\([\"\']?(https?\:\/\/[^\"\']+)",
+        r"window.location\s*=\s*[\"\']?(https?\:\/\/[^\"\']+)",
+        r"window\.top\.location\.replace\([\"\']?(https?\:\/\/[^\"\']+)",
+        r"window.top.location\s*=\s*[\"']?(https?\:\/\/[^\"']+)",
         r"meta\s*http-equiv\s*=\s*[\"\']?refresh[\"\']?\s*content=[\"\']?\d+;(?:url\s*=)?\s*[\'\"]?(https?\:\/\/[^\"\']+)",
         r"meta\.content\s*=\s*[\"\']?\d+;\s*(?:url\s*=)?\s*[\'\"]?(https?:\/\/[^\"\']+)",
         r"meta\s*http-equiv\s*=\s*[\"\']?refresh[\"\']?\s*content=[\"\']?\d+;\s*(?:url\s*=)?\s*[\'\"]?(https?:\/\/[^\"\']+)",
-        r"location\.href\s*=\s*[\"']?(https?\:\/\/[^\"']+)",
+        r"location.href\s*=\s*[\"']?(https?\:\/\/[^\"']+)",
         r"\.src\s*=\s*[\"\']?(https?\:\/\/[^\"\']+)"
-    ]
-    find = None
-    for reg in regex:
-        result = re.findall(reg, content, re.IGNORECASE)
-        if result:
-            find = result[0].replace("'", '')
-            break
-    return find
-
-def ok_check(content):
-    regex = [
-        r"(itms\-appss?\:\/\/[^\"\']+)",
-        r"(https?\:\/\/itunes\.apple\.com[^\"\']+)",
     ]
     find = None
     for reg in regex:
@@ -78,17 +66,18 @@ def proxy(url, country, agent, rand):
     session = requests.session()
     session.max_redirects = 10
     session.verify = False
-    session.timeout = (60, 30)
+    session.timeout = 60
     session.headers.update({'User-Agent': agent})
     session.proxies.update(proxies)
 
     url = unquote(url)
     url = url.replace('&amp;', '&')
 
+    url_short = ''
     result = None
 
-    if ok_check(url) is not None:
-        result = 'OK! URL=' + url
+    if 'itunes.apple.com' in url:
+        result = 'Completed with URL=' + url
 
     if result is None:
         try:
@@ -96,43 +85,29 @@ def proxy(url, country, agent, rand):
             query = parse_qs(o.query, True)
             url_short = o._replace(query=None).geturl()
             g = session.get(url_short, params=query)
-            result = get_html_content(g.content)
-            result = result.replace('\/', '/')
+            #result = get_html_content(g.content)
+            result = g.content.decode('utf8').replace('\/', '/')
 
         except requests.exceptions.Timeout as e:
             # Maybe set up for a retry, or continue in a retry loop
-            result = "Timeout %s" % e
+            result = "Error with request %s" % e
         except requests.exceptions.TooManyRedirects as e:
             # Tell the user their URL was bad and try a different one
-            result = "TooManyRedirects %s" % e
+            result = "Error with request %s" % e
         except requests.exceptions.ContentDecodingError as e:
             # Tell the user their URL was bad and try a different one
-            result = "ContentDecodingError %s" % e
-        except requests.exceptions.ProxyError as e:
-            # Tell the user their URL was bad and try a different one
-            result = "ProxyError %s" % e
+            result = "Error with request %s" % e
         except requests.exceptions.InvalidURL as e:
             # Tell the user their URL was bad and try a different one
-            result = "InvalidURL %s" % e
-        except requests.exceptions.ConnectionError as e:
-            # Tell the user their URL was bad and try a different one
-            result = "ConnectionError %s" % e
+            result = "Error with request %s" % e
         except UnicodeError as err:
-            result = "{ 'error' : "+format(err)+", 'url' : "+url+", 'agent' : "+agent+", 'country' : "+country+", 'rand' : "+rand+" }"
+            result = "Error in unicode {}".format(err) + " for url=" + url + ' short_url=' + url_short
         except Exception as err:
-            result = "Exception {}".format(err) + " for url=" + url
+            result = "Error in proxy {}".format(err) + " for url=" + url
 
     if 'ogp.me/ns' in result:
-        result = 'OK! URL='+url
-    check_in_content = ok_check(result)
-    if check_in_content is not None:
-        result = 'OK! URL=' + check_in_content
-    if 'not available' in result:
-        result = 'Error! Reason=' + get_html_content(result, True)
-    if 'temporarily unavailable' in result:
-        result = 'Error! Reason=' + get_html_content(result, True)
-    if 'ProxyError' in result or 'ConnectionError' in result or 'TooManyRedirects' in result:
-        result = 'Error! Reason='+get_html_content(result, True)
+        result = 'Completed with URL=' + url
+
 
     return result
 
@@ -160,29 +135,29 @@ def virtual_curl(country, url, rand, agent, redirection=0):
         if not result:
             is_ok = False
     except Exception as err:
-        result = "Error {}".format(err)
+        result = "Error  {}".format(err)
         is_ok = False
 
     if redirection < 6 and is_ok:
         check = regex_check(result)
         if check is not None:
             redirection = redirection + 1
-            return virtual_curl(country, check, rand, agent, redirection)
+            return virtual_curl(country, check, agent, rand, redirection)
         else:
             special_check = regex_without_scheme(result, url)
             if special_check is not None:
                 redirection = redirection + 1
-                return virtual_curl(country, special_check, rand, agent, redirection)
+                return virtual_curl(country, special_check, agent, rand, redirection)
     if len(result) > 2000 and is_ok:
         end_result = result[:2000]
     else:
         end_result = result
 
-    return end_result
+    return '{ source : '+ end_result +', url : ' + url + ' }'
 
 def fetch_item(log_id, country, allow, link):
 
-    rand = get_random_string(length=8, allowed_chars='abcdefghijklmnopqrstuvwxyz123456789')
+    rand = StringGenerator('[a-z]{4}|[0-9]{4}').render()[::8]
 
     agent_row = 'Mozilla/5.0 (iPhone; CPU iPhone OS 10_1 like Mac OS X) AppleWebKit/602.2.14 (KHTML, like Gecko) Mobile/14B72' if allow > 4 else 'Mozilla/5.0 (Linux; Android 5.0.1; SAMSUNG SM-N920K Build/LRX22C) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/3.4 Chrome/34.0.1847.118 Mobile Safari/537.36'
 
@@ -193,31 +168,12 @@ def fetch_item(log_id, country, allow, link):
 
     item = Log.objects.get(pk=log_id)
     item.agent = agent_row
-    item.response = response.encode('utf-8')
+    item.response = response
     item.sent = 1
     item.save()
 
 class Command(BaseCommand):
     help = 'Running virtual clicks'
     def handle(self, *args, **options):
-
-        start_time = time.time()
-
-        redis_client = redis.Redis()
-        timeout = 60 * 60 * 5  # five hours
-        lock = redis_client.lock('virtual_click_process', timeout=timeout)
-        have_lock = lock.acquire(blocking=False)
-        if have_lock:
-            requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-            #connection.allow_thread_sharing = True
-            pool = Pool(4000)
-            logs  = Log.objects.filter(sent__isnull=True).all()[::1000]
-            for log in logs:
-                pool.spawn(fetch_item, log.id, log.country, log.allow, log.link)
-            pool.join()
-            lock.release()
-        else:
-            self.stdout.write(self.style.SUCCESS('Another process is running!'))
-
-        end_time = time.time()
-        self.stdout.write(self.style.SUCCESS('Successfully end clicks in "%s"' % (end_time - start_time)))
+        response = virtual_curl('gb', 'http://clk.myiads.com/click?a=75052433&o=76332999&sub_id=1ed93ab6c9b36e3dbefd21d74afe17d6&sub_id2=Tq6I9AtHPe12VODH&idfa=', '434343', '')
+        print(response)

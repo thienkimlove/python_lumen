@@ -27,6 +27,7 @@ class Log(models.Model):
     allow = models.PositiveSmallIntegerField(null=True)
     country = models.CharField(max_length=255, blank=True)
     agent = models.CharField(max_length=255, blank=True)
+    process = models.CharField(max_length=255, null=True)
     response = models.TextField(blank=True)
     sent = models.NullBooleanField()
     class Meta:
