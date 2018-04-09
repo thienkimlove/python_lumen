@@ -70,12 +70,13 @@ def get_html_content(content, kill_script = False):
 
 def proxy(url, country, agent, rand):
 
-    credentials = 'lum-customer-theway_holdings-zone-nam-country-' + country.lower() + '-session-' + rand.lower() + ':99oah6sz26i5'
+    #credentials = 'lum-customer-theway_holdings-zone-nam-country-' + country.lower() + '-session-' + rand.lower() + ':99oah6sz26i5'
 
+    credentials = 'lum-customer-appsuper-zone-city-country-' + country.lower() + '-session-' + rand.lower() + ':anhyeuemvu'
 
     proxies = {
-        'http':  credentials + "@zproxy.luminati.io:22225",
-        'https': credentials + "@zproxy.luminati.io:22225"
+        "http": "http://" + credentials + "@zproxy.luminati.io:22225",
+        "https": "https://" + credentials + "@zproxy.luminati.io:22225",
     }
     session = requests.session()
     session.max_redirects = 10
@@ -122,7 +123,7 @@ def proxy(url, country, agent, rand):
         except UnicodeError as err:
             result = "{ 'error' : "+format(err)+", 'url' : "+url+", 'agent' : "+agent+", 'country' : "+country+", 'rand' : "+rand+" }"
         except Exception as err:
-            result = "Exception {}".format(err) + " for url=" + url
+            result = "Exception %s for %s" % (repr(err), url)
 
     if 'ogp.me/ns' in result:
         result = 'OK! URL='+url
@@ -166,8 +167,8 @@ def virtual_curl(country, url, rand, agent, redirection=0):
     except Exception as err:
         result = "Error {}".format(err)
         is_ok = False
-
-    if redirection < 6 and is_ok:
+    # change from 6 to 3 for proxy traffic
+    if redirection < 3 and is_ok:
         check = regex_check(result)
         if check is not None:
             redirection = redirection + 1

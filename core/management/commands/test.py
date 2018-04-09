@@ -50,7 +50,7 @@ def get_html_content(content, kill_script = False):
 
 def proxy(url, country, agent, rand):
 
-    credentials = 'lum-customer-theway_holdings-zone-nam-country-' + country + '-session-' + rand + ':99oah6sz26i5'
+    credentials = 'lum-customer-appsuper-zone-city1-country-' + country + '-session-' + rand + ':g1blbu4ayv1q'
 
     url = url.replace("&amp;", "&")
 
