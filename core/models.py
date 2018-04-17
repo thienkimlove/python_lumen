@@ -1,5 +1,5 @@
-
 from django.db import models
+
 
 # Create your models here.
 class TimeStampedModel(models.Model):
@@ -9,17 +9,22 @@ class TimeStampedModel(models.Model):
     """
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
     class Meta:
         abstract = True
+
 
 class Agent(TimeStampedModel):
     id = models.AutoField(primary_key=True)
     agent = models.CharField(max_length=255, blank=True)
     type = models.PositiveSmallIntegerField(null=True)
+
     class Meta:
         db_table = 'agents'
+
     def __str__(self):
         return self.agent
+
 
 class Log(models.Model):
     id = models.BigAutoField(primary_key=True)
@@ -30,7 +35,10 @@ class Log(models.Model):
     process = models.CharField(max_length=255, null=True)
     response = models.TextField(blank=True)
     sent = models.NullBooleanField()
+    site_name = models.CharField(max_length=255, blank=True, null=True)
+
     class Meta:
         db_table = 'logs'
+
     def __str__(self):
         return self.link
