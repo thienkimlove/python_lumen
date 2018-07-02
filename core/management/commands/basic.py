@@ -75,7 +75,7 @@ def proxy(url, country, agent, rand, site_name):
     result = None
 
     if site_name == 'appsdude' or site_name == 'mobifaster':
-        credentials = 'lum-customer-appsuper-zone-city-country-' + country.lower() + '-session-' + rand.lower() + ':anhyeuemvu'
+        credentials = 'lum-customer-appsuper-zone-city-country-' + country.lower() + '-session-' + rand.lower() + ':3qu6zxvfkfq5'
 
     if site_name == 'richxyz' or site_name == 'inmob':
         credentials = 'lum-customer-appsuper-zone-city1-country-' + country.lower() + '-session-' + rand.lower() + ':g1blbu4ayv1q'
