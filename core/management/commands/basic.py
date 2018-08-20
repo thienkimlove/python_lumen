@@ -86,6 +86,12 @@ def proxy(url, country, agent, rand, site_name):
     if site_name == 'richnet':
         credentials = 'lum-customer-appsuper-zone-teamtuan-country-' + country.lower() + '-session-' + rand.lower() + ':1e1esu030htk'
 
+    if site_name == 'cybernet':
+        credentials = 'lum-customer-appsuper-zone-teamtinh-country-' + country.lower() + '-session-' + rand.lower() + ':qbcxukm4q2ev'
+
+    if site_name == 'cyberxyz':
+        credentials = 'lum-customer-appsuper-zone-res2-country-' + country.lower() + '-session-' + rand.lower() + ':88qga5h056dq'
+
     if credentials is not None:
 
         proxies = {
