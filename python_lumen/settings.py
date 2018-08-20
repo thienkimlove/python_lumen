@@ -148,5 +148,3 @@ CELERY_ACCEPT_CONTENT = ['json', 'pickle']
 CELERY_RESULT_BACKEND = 'django-db'
 CELERY_TASK_SERIALIZER = 'pickle'
 #CELERY_ENABLE_UTC = False
-
-LOG_FILE = os.path.join(BASE_DIR, 'debug.log')

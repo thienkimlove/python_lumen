@@ -75,10 +75,16 @@ def proxy(url, country, agent, rand, site_name):
     result = None
 
     if site_name == 'appsdude' or site_name == 'mobifaster':
-        credentials = 'lum-customer-appsuper-zone-city-country-' + country.lower() + '-session-' + rand.lower() + ':3qu6zxvfkfq5'
+        credentials = 'lum-customer-appsuper-zone-city-country-' + country.lower() + '-session-' + rand.lower() + ':s8816r8372uh'
 
     if site_name == 'richxyz' or site_name == 'inmob':
         credentials = 'lum-customer-appsuper-zone-city1-country-' + country.lower() + '-session-' + rand.lower() + ':g1blbu4ayv1q'
+
+    if site_name == 'inmobxyz':
+        credentials = 'lum-customer-appsuper-zone-teamthanh-country-' + country.lower() + '-session-' + rand.lower() + ':f2enpm35i7zw'
+
+    if site_name == 'richnet':
+        credentials = 'lum-customer-appsuper-zone-teamtuan-country-' + country.lower() + '-session-' + rand.lower() + ':1e1esu030htk'
 
     if credentials is not None:
 

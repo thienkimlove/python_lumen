@@ -1,2 +1,3 @@
 #!/usr/bin/env bash
-/root/Env/python/bin/python /var/www/python/manage.py click
+source /root/Env/python/bin/activate
+python3 /var/www/python/manage.py click
